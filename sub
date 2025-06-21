@@ -138,3 +138,15 @@ task.spawn(function()
         task.wait(600)
     end
 end)
+
+-- Auto Chest Roll
+task.spawn(function()
+    local autoCmdRemote = game:GetService("ReplicatedStorage").Remotes.RollChest.SetAutoCmd
+
+    while true do
+        pcall(function()
+            autoCmdRemote:FireServer(true)
+        end)
+        task.wait(60)
+    end
+end)
