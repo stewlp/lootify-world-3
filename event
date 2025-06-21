@@ -1,0 +1,62 @@
+task.wait()
+repeat task.wait() until game:IsLoaded()
+if game.PlaceId == 96906678295592 then
+    game:GetService('TeleportService'):Teleport(94620173163446)
+end
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+if game.PlaceId == 94620173163446 then
+
+task.spawn(function()
+    while true do
+        local args = {
+            [1] = workspace.Match:FindFirstChild("1-1").Match2.Match
+        }
+        game:GetService("ReplicatedStorage").Remotes.Region.Match.Enter:FireServer(unpack(args))
+        task.wait(1)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        pcall(function()
+            ReplicatedStorage.Remotes.Rebirth.TryRebirth:FireServer()
+            ReplicatedStorage.Remotes.Trade.Trade:FireServer("RemoveAll")
+        end)
+        task.wait(300)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        local character = player.Character or player.CharacterAdded:Wait()
+        local tool = character:FindFirstChildOfClass("Tool")
+        if tool then pcall(function() tool:Activate() end) end
+        task.wait(0.5)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        pcall(function()
+            ReplicatedStorage.Remotes.Reward.RollDices:FireServer()
+            ReplicatedStorage.Remotes.Reward.ClaimReward:FireServer()
+        end)
+        task.wait(600)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        pcall(function()
+            ReplicatedStorage.Remotes.RollChest.SetAutoCmd:FireServer(true)
+        end)
+        task.wait(60)
+    end
+end)
+
+end
