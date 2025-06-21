@@ -17,7 +17,7 @@ task.spawn(function()
             [1] = workspace.Match:FindFirstChild("1-1").Match2.Match
         }
         game:GetService("ReplicatedStorage").Remotes.Region.Match.Enter:FireServer(unpack(args))
-        task.wait(1)
+        task.wait(3.8)
     end
 end)
 
