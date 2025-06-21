@@ -1,14 +1,18 @@
-getgenv().Webhook = "https://discord.com/api/webhooks/1206583017401884692/9CnPLWhvk2MAq7BQAz8JczPP7AXufo59G7dHgST_saQhXfGfEpUPo_68j_w0D6wOMivl"
+-- main-lootify
 
+-- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 
+-- Player & Settings
 local player = Players.LocalPlayer
+local webhook = getgenv().Webhook or "https://your.webhook.url"
 RunService:Set3dRenderingEnabled(false)
 
+-- Target Tween CFrame
 local targetCFrame = CFrame.new(
     1990.9613, -59.3519974, 2791.26318,
     -0.752274275, -0.0443780124, -0.657353759,
@@ -18,10 +22,36 @@ local targetCFrame = CFrame.new(
 
 local isTweening = false
 
+-- Helpers
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+local function getTool()
+    local char = getCharacter()
+    return char:FindFirstChildOfClass("Tool")
+end
+
+local function sendWebhook()
+    local playerName = player.Name
+    pcall(function()
+        request({
+            Url = webhook,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode({
+                content = "The " .. playerName .. " Finished"
+            })
+        })
+    end)
+end
+
+-- Tween Function
 local function tweenPlayerToTarget()
     repeat task.wait() until game:IsLoaded()
-    local character = player.Character or player.CharacterAdded:Wait()
-    local rootPart = character:WaitForChild("HumanoidRootPart")
+    local rootPart = getCharacter():WaitForChild("HumanoidRootPart")
 
     local tween = TweenService:Create(
         rootPart,
@@ -35,56 +65,14 @@ local function tweenPlayerToTarget()
     isTweening = false
 end
 
-task.spawn(function()
-    local lastTrade = 0
-    while true do
-        local args1 = {
-            [1] = 101017
-        }
-        ReplicatedStorage.Remotes.Region.EnterRegion:FireServer(unpack(args1))
-
-        if tick() - lastTrade >= 1 then
-            local args2 = {
-                [1] = "RemoveAll"
-            }
-            ReplicatedStorage.Remotes.Trade.Trade:FireServer(unpack(args2))
-            lastTrade = tick()
-        end
-
-        task.wait()
-    end
-end)
-
-local function sendWebhook()
-    local playerName = player.Name
-
-    pcall(function()
-        request({
-            Url = getgenv().Webhook,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode({
-                content = "The " .. playerName .. " Finished"
-            })
-        })
-    end)
-end
-
+-- 🧠 Main Reset Loop
 task.spawn(function()
     while true do
         tweenPlayerToTarget()
 
-        local countdown = 90
-        while countdown > 0 do
-            task.wait(1)
-            countdown -= 1
-        end
+        task.wait(90)
 
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-
+        local humanoid = getCharacter():FindFirstChildOfClass("Humanoid")
         if humanoid then
             humanoid.Health = 0
             sendWebhook()
@@ -94,16 +82,59 @@ task.spawn(function()
     end
 end)
 
+-- 🔁 EnterRegion + Trade Loop
+task.spawn(function()
+    local regionRemote = ReplicatedStorage.Remotes.Region.EnterRegion
+    local tradeRemote = ReplicatedStorage.Remotes.Trade.Trade
+    local lastTrade = 0
+
+    while true do
+        pcall(function()
+            regionRemote:FireServer(101017)
+            if tick() - lastTrade >= 1 then
+                tradeRemote:FireServer("RemoveAll")
+                lastTrade = tick()
+            end
+        end)
+        task.wait()
+    end
+end)
+
+-- 🖱️ Auto Tool Click (0.5s, pauses during tween)
 task.spawn(function()
     while true do
         if not isTweening then
-            local character = player.Character or player.CharacterAdded:Wait()
-            local tool = character:FindFirstChildOfClass("Tool")
-
-            if tool then
-                tool:Activate()
-            end
+            local tool = getTool()
+            if tool then pcall(function() tool:Activate() end) end
         end
         task.wait(0.5)
+    end
+end)
+
+-- 🔄 Rebirth + Trade Every 5 Minutes
+task.spawn(function()
+    local rebirthRemote = ReplicatedStorage.Remotes.Rebirth.TryRebirth
+    local tradeRemote = ReplicatedStorage.Remotes.Trade.Trade
+
+    while true do
+        pcall(function()
+            rebirthRemote:FireServer()
+            tradeRemote:FireServer("RemoveAll")
+        end)
+        task.wait(300)
+    end
+end)
+
+-- 🎲 Dice Roll + Claim Reward Every 10 Minutes
+task.spawn(function()
+    local rollRemote = ReplicatedStorage.Remotes.Reward.RollDices
+    local claimRemote = ReplicatedStorage.Remotes.Reward.ClaimReward
+
+    while true do
+        pcall(function()
+            rollRemote:FireServer()
+            claimRemote:FireServer()
+        end)
+        task.wait(600)
     end
 end)
