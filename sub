@@ -1,0 +1,144 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+
+-- Load Rayfield open-source library directly from GitHub raw source
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Rayfield/main/source'))()
+
+local window = Rayfield:CreateWindow({
+    Name = "Auto Tasks Control",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "Auto Reset + Boss Entry",
+    ConfigurationSaving = {
+        Enabled = false,
+    },
+    Discord = {
+        Enabled = false,
+    },
+    KeySystem = false,
+})
+
+local autoResetEnabled = false
+local autoBossEnabled = false
+
+local resetInterval = 120 -- seconds
+
+local resetElapsed = 0
+local bossElapsed = 0
+
+-- UI: Auto Reset Toggle
+local resetToggle = window:CreateToggle({
+    Name = "Auto Reset",
+    CurrentValue = false,
+    Flag = "AutoResetToggle",
+    Callback = function(value)
+        autoResetEnabled = value
+        if not value then
+            resetElapsed = 0
+            resetTimerLabel:SetText("Auto Reset Timer: 0s")
+        end
+    end,
+})
+
+-- UI: Auto Boss Entry Toggle
+local bossToggle = window:CreateToggle({
+    Name = "Auto Boss Entry",
+    CurrentValue = false,
+    Flag = "AutoBossToggle",
+    Callback = function(value)
+        autoBossEnabled = value
+        if not value then
+            bossElapsed = 0
+            bossTimerLabel:SetText("Auto Boss Entry Timer: 0s")
+        end
+    end,
+})
+
+-- Divider / Section for timers
+window:CreateSection("Timers")
+
+-- Timer labels
+local resetTimerLabel = window:CreateLabel({
+    Name = "Auto Reset Timer: 0s",
+})
+
+local bossTimerLabel = window:CreateLabel({
+    Name = "Auto Boss Entry Timer: 0s",
+})
+
+-- Function: Reset character
+local function resetCharacter()
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid:TakeDamage(100)
+    end
+end
+
+-- Function: Boss entry sequence
+local function bossEntrySequence()
+    local success, err = pcall(function()
+        local args1 = {
+            [1] = workspace.Match:FindFirstChild("3-5").Match2.Match
+        }
+        ReplicatedStorage.Remotes.Region.Match.Enter:FireServer(unpack(args1))
+
+        local args2 = {
+            [1] = 101017
+        }
+        ReplicatedStorage.Remotes.Region.EnterRegion:FireServer(unpack(args2))
+
+        local args3 = {
+            [1] = "RemoveAll"
+        }
+        ReplicatedStorage.Remotes.Trade.Trade:FireServer(unpack(args3))
+
+        local args4 = {
+            [1] = workspace.Match:FindFirstChild("3-5").Match2.Match
+        }
+        ReplicatedStorage.Remotes.Region.Match.Leave:FireServer(unpack(args4))
+    end)
+    if not success then
+        warn("Error running bossEntrySequence:", err)
+    end
+end
+
+-- Main loops
+
+-- Auto Reset loop (interval 120s)
+coroutine.wrap(function()
+    while true do
+        if autoResetEnabled then
+            resetCharacter()
+            resetElapsed = 0
+            for i = 1, resetInterval do
+                task.wait(1)
+                resetElapsed = i
+                resetTimerLabel:SetText("Auto Reset Timer: "..resetElapsed.."s")
+                if not autoResetEnabled then break end
+            end
+        else
+            resetElapsed = 0
+            resetTimerLabel:SetText("Auto Reset Timer: 0s")
+            task.wait(1)
+        end
+    end
+end)()
+
+-- Auto Boss Entry loop (no delay, loops continuously while ON)
+coroutine.wrap(function()
+    while true do
+        if autoBossEnabled then
+            bossEntrySequence()
+            -- Update timer each second while looping continuously
+            bossElapsed = 0
+            while autoBossEnabled do
+                bossElapsed = bossElapsed + 1
+                bossTimerLabel:SetText("Auto Boss Entry Timer: "..bossElapsed.."s")
+                task.wait(1)
+            end
+        else
+            bossElapsed = 0
+            bossTimerLabel:SetText("Auto Boss Entry Timer: 0s")
+            task.wait(1)
+        end
+    end
+end)()
