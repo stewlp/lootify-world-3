@@ -61,7 +61,7 @@ task.spawn(function()
         local character = player.Character or player.CharacterAdded:Wait()
         local tool = character:FindFirstChildOfClass("Tool")
         if tool then pcall(function() tool:Activate() end) end
-        task.wait(5)
+        task.wait(2)
     end
 end)
 
