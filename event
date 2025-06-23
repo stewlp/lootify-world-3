@@ -1,6 +1,6 @@
 task.wait()
 repeat task.wait() until game:IsLoaded()
-if game.PlaceId == 96906678295592 then
+if game.PlaceId == 140616130808907 then
     game:GetService('TeleportService'):Teleport(94620173163446)
 end
 
